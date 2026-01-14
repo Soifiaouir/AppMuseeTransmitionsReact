@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useState} from "react";
-import useToken from "../APP/useToken";
+import useToken from "../../Component/APP/useToken/useToken.js";
 
 /**
  * Now any component can access authentication state using useAuth(),
@@ -14,6 +14,7 @@ export function AuthProvider({children}){
         window.location.href = '/login'; //Redirection 
     }
 
+    //export a travers value des élements et dans les composant appel a travers useAuth()
     const value ={
         token,
         setToken, 

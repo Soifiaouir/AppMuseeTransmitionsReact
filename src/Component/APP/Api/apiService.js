@@ -1,4 +1,4 @@
-import { BASE_URL, USERNAME, PASSWORD } from '../config.js';
+import { BASE_URL, USERNAME, PASSWORD } from '../../../config.js';
 
 // Variable pour stocker le token
 let authToken = null;

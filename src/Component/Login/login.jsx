@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginMembre, logoutMembre, getMembreToken } from '../../API/apiService.js'; 
+import { loginMembre, getMembreToken } from '../../API/apiService.js'; 
 import { useAuth } from '../Context/authContext.jsx';
 import { useNavigate } from 'react-router-dom';
 

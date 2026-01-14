@@ -1,7 +1,7 @@
 //listes des bornes
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Component/Context/authContext';
+import { useAuth } from '../../Component/Context/authContext.jxs';
 
 export default function Dashboard({removeToken}) {
 const navigate = useNavigate();
