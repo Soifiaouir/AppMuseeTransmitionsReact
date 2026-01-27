@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useState} from "react";
-import useToken from "../../Component/APP/useToken/useToken.js";
+import useToken from "../APP/useToken/useToken.js";
 
 /**
  * Now any component can access authentication state using useAuth(),
