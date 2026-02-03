@@ -9,28 +9,56 @@ function Dashboard({ removeToken }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('themes');
   const [currentLayout, setCurrentLayout] = useState(null);
+  
+  // NOUVELLES VARIABLES pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10; // Défini dans votre entité PHP
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   useEffect(() => {
+    console.log('🔄 useEffect déclenché - Page:', currentPage);
     fetchThemes();
     loadCurrentLayout();
-  }, []);
+  }, [currentPage]); // Recharger quand la page change
 
   const fetchThemes = async () => {
     try {
       setLoading(true);
-      const data = await getThemes();
-      const themesArray = data['hydra:member'] || data.member || data;
-      setThemes(Array.isArray(themesArray) ? themesArray : []);
+      console.log('📡 Appel API getThemes avec page:', currentPage);
+      
+      const data = await getThemes(currentPage); // Passer le numéro de page
+      
+      console.log('✅ Données reçues de l\'API:', data);
+      console.log('📊 Structure des données:', {
+        themes: data.themes,
+        totalItems: data.totalItems,
+        currentPage: data.currentPage,
+        typeDethemes: Array.isArray(data.themes) ? 'Array' : typeof data.themes,
+        nombreDeThemes: data.themes?.length || 0
+      });
+      
+      setThemes(Array.isArray(data.themes) ? data.themes : []);
+      setTotalItems(data.totalItems); // Stocker le total
+      
+      console.log('💾 État après mise à jour:', {
+        themesStockés: Array.isArray(data.themes) ? data.themes.length : 0,
+        totalItemsStocké: data.totalItems,
+        totalPages: Math.ceil(data.totalItems / itemsPerPage)
+      });
+      
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('❌ Erreur lors de la récupération:', error);
       setThemes([]);
     } finally {
       setLoading(false);
+      console.log('✔️ Chargement terminé');
     }
   };
 
   const loadCurrentLayout = () => {
     const layout = getTabletLayout();
+    console.log('📱 Layout tablette chargé:', layout);
     setCurrentLayout(layout);
   };
 
@@ -43,10 +71,47 @@ function Dashboard({ removeToken }) {
     navigate(`/configure/${themeId}`);
   };
 
+  // NOUVELLES FONCTIONS de pagination
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      console.log('➡️ Passage à la page suivante:', currentPage + 1);
+      setCurrentPage(currentPage + 1);
+    } else {
+      console.log('⚠️ Déjà sur la dernière page');
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      console.log('⬅️ Retour à la page précédente:', currentPage - 1);
+      setCurrentPage(currentPage - 1);
+    } else {
+      console.log('⚠️ Déjà sur la première page');
+    }
+  };
+
+  const goToPage = (pageNumber) => {
+    console.log('🎯 Navigation vers la page:', pageNumber);
+    setCurrentPage(pageNumber);
+  };
+
+  // Log au rendu du composant
+  console.log('🎨 Rendu du Dashboard:', {
+    currentPage,
+    totalItems,
+    totalPages,
+    nombreThemesAffichés: themes.length,
+    loading
+  });
+
   if (loading) {
-    return (
-      <div className="w-full h-full bg-white flex items-center justify-center p-8">
-        <div className="text-2xl font-bold text-zinc-950">Chargement...</div>
+      return (
+      <div className="w-full h-screen bg-white flex items-center justify-center p-12">
+        <div className="text-center max-w-md mx-auto">
+          <div className="w-24 h-24 border-8 border-blue-100 border-t-blue-800 rounded-full animate-spin mx-auto mb-8 shadow-2xl"></div>
+          <h2 className="text-4xl font-black text-blue-800 mb-4">Chargement</h2>
+          <p className="text-lg text-zinc-950 opacity-60">Veuillez patienter...</p>
+        </div>
       </div>
     );
   }
@@ -78,13 +143,17 @@ function Dashboard({ removeToken }) {
         </div>
       </header>
 
-      {/* Main content - flex-1 pour remplir l'espace */}
+      {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto px-6 py-8 h-full">
           {activeTab === 'themes' && (
             <div className="h-full">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 gap-4">
                 <h2 className="text-3xl font-bold text-blue-500 flex-1">Liste des Thèmes</h2>
+                {/* NOUVEAU : Info pagination */}
+                <p className="text-lg text-zinc-950 opacity-75">
+                  {totalItems > 0 && `${((currentPage - 1) * itemsPerPage) + 1} à ${Math.min(currentPage * itemsPerPage, totalItems)} sur ${totalItems} thèmes`}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
@@ -156,6 +225,72 @@ function Dashboard({ removeToken }) {
                   </div>
                 )}
               </div>
+
+              {/* NOUVEAU : Contrôles de pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 mt-8">
+                  {/* Bouton Précédent */}
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className={`px-6 py-3 rounded-xl font-bold transition-all duration-200 ${
+                      currentPage === 1
+                        ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                        : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-lg'
+                    }`}
+                  >
+                    ← Précédent
+                  </button>
+
+                  {/* Numéros de page */}
+                  <div className="flex gap-2">
+                    {[...Array(totalPages)].map((_, index) => {
+                      const pageNumber = index + 1;
+                      
+                      // Afficher seulement certaines pages si beaucoup de pages
+                      const shouldShow = 
+                        pageNumber === 1 || 
+                        pageNumber === totalPages ||
+                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+
+                      if (!shouldShow) {
+                        // Afficher "..." entre les groupes de pages
+                        if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                          return <span key={pageNumber} className="px-3 py-3 text-zinc-400">...</span>;
+                        }
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => goToPage(pageNumber)}
+                          className={`px-5 py-3 rounded-xl font-bold transition-all duration-200 ${
+                            currentPage === pageNumber
+                              ? 'bg-blue-800 text-white shadow-lg scale-110'
+                              : 'bg-white border-2 border-zinc-200 text-zinc-950 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bouton Suivant */}
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`px-6 py-3 rounded-xl font-bold transition-all duration-200 ${
+                      currentPage === totalPages
+                        ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                        : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-lg'
+                    }`}
+                  >
+                    Suivant →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -165,7 +300,7 @@ function Dashboard({ removeToken }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-4 border-blue-200 p-10 rounded-3xl text-center shadow-2xl">
                   <div className="text-5xl font-black text-blue-800 mb-4">
-                    {themes.length}
+                    {totalItems}
                   </div>
                   <div className="text-2xl font-bold text-zinc-950">Thèmes</div>
                 </div>

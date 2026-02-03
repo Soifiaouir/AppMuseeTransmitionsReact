@@ -12,18 +12,53 @@ function VisitorDisplay() {
   const [layout, setLayout] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [enrichedElements, setEnrichedElements] = useState([]); // ⭐ NOUVEAU
+  const [enrichedElements, setEnrichedElements] = useState([]);
+  const [modalConfigs, setModalConfigs] = useState({});
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
   useEffect(() => {
     loadTabletConfiguration();
   }, []);
+
+  // Détection d'activité utilisateur
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+    };
+
+    // Écouter toutes les interactions
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    return () => {
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+    };
+  }, []);
+
+  // Timer d'inactivité - refresh après 1m30
+  useEffect(() => {
+    const inactivityTimer = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivity;
+      if (timeSinceLastActivity >= 90000) { // 90 secondes = 1m30
+        window.location.reload();
+      }
+    }, 1000); // Vérifier toutes les secondes
+
+    return () => clearInterval(inactivityTimer);
+  }, [lastActivity]);
 
   const loadTabletConfiguration = async () => {
     try {
       setIsLoading(true);
       
       const tabletConfig = getTabletLayout();
-      console.log('📦 Configuration localStorage:', tabletConfig);
       
       if (!tabletConfig || !tabletConfig.themeId) {
         setError('Cette tablette n\'est pas encore configurée');
@@ -32,31 +67,31 @@ function VisitorDisplay() {
 
       const elements = Array.isArray(tabletConfig.elements) ? tabletConfig.elements : [];
       setLayout(elements);
-      console.log('📐 Layout chargé:', elements.length, 'éléments');
 
-      // Charger le thème
+      if (tabletConfig.modalConfigs) {
+        setModalConfigs(tabletConfig.modalConfigs);
+      }
+
       if (tabletConfig.themeData) {
-        console.log('✅ Utilisation du thème depuis localStorage');
         setThemeData(tabletConfig.themeData);
       } else {
-        console.log('🌐 Chargement du thème depuis l\'API...');
         const data = await getThemeById(tabletConfig.themeId);
         setThemeData(data);
       }
 
-      // ⭐ NOUVEAU : Enrichir les éléments de type 'card' avec les données complètes
       await enrichCardElements(elements);
       
-      console.log('✓ Configuration chargée pour les visiteurs');
     } catch (err) {
-      console.error('❌ Erreur chargement configuration:', err);
-      
       const tabletConfig = getTabletLayout();
       if (tabletConfig && tabletConfig.themeData) {
-        console.log('⚠️ Utilisation des données localStorage malgré l\'erreur API');
         setThemeData(tabletConfig.themeData);
         const elements = Array.isArray(tabletConfig.elements) ? tabletConfig.elements : [];
         setLayout(elements);
+        
+        if (tabletConfig.modalConfigs) {
+          setModalConfigs(tabletConfig.modalConfigs);
+        }
+        
         await enrichCardElements(elements);
       } else {
         setError('Impossible de charger la configuration');
@@ -66,28 +101,22 @@ function VisitorDisplay() {
     }
   };
 
-  // ⭐ NOUVELLE FONCTION : Enrichir les cartes avec les données complètes de l'API
   const enrichCardElements = async (elements) => {
     try {
       const enriched = await Promise.all(
         elements.map(async (element) => {
           if (element.type === 'card') {
-            console.log('🔄 Chargement carte complète:', element.data?.id || element.id);
-            
-            // Si element.data est juste un ID
             const cardId = typeof element.data === 'number' ? element.data : element.data?.id;
             
             if (cardId) {
               try {
                 const fullCardData = await getCardById(cardId);
-                console.log('✅ Carte chargée:', fullCardData);
                 return {
                   ...element,
-                  data: fullCardData // Remplacer par les données complètes
+                  data: fullCardData
                 };
               } catch (error) {
-                console.error(`❌ Erreur chargement carte ${cardId}:`, error);
-                return element; // Garder l'élément tel quel en cas d'erreur
+                return element;
               }
             }
           }
@@ -96,10 +125,8 @@ function VisitorDisplay() {
       );
       
       setEnrichedElements(enriched);
-      console.log('✅ Éléments enrichis:', enriched);
     } catch (error) {
-      console.error('❌ Erreur enrichissement des cartes:', error);
-      setEnrichedElements(elements); // Utiliser les éléments non enrichis en cas d'erreur
+      setEnrichedElements(elements);
     }
   };
 
@@ -125,6 +152,25 @@ function VisitorDisplay() {
     return types[media.extensionFile.toLowerCase()] || 'application/octet-stream';
   };
 
+  const getBackgroundImage = () => {
+    if (!themeData) return null;
+
+    if (!themeData.backgroundImage || themeData.backgroundImage.length === 0) {
+      return null;
+    }
+
+    const bgPath = themeData.backgroundImage.publicPath;
+    if (bgPath) {
+      const cleanPath = bgPath.replace(/^\/uploads\/media\//, '');
+      const fullUrl = `${UPLOAD_URL}/${cleanPath}`;
+      return fullUrl;
+    }
+
+    return null;
+  };
+
+  const backgroundImage = getBackgroundImage();
+
   if (isLoading) {
     return (
       <div className="w-full h-screen bg-white flex items-center justify-center p-12">
@@ -145,8 +191,8 @@ function VisitorDisplay() {
           <div className="w-32 h-32 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-blue-50 to-blue-100 border-4 border-blue-200 flex items-center justify-center shadow-2xl">
             <span className="text-6xl font-black text-blue-800">!</span>
           </div>
-          <h1 className="text-5xl font-black text-blue-800 mb-4">Configuration requise</h1>
-          <h2 className="text-2xl font-bold text-blue-500 mb-6">Tablette non configurée</h2>
+          <h2 className="text-5xl font-black text-blue-800 mb-4">Configuration requise</h2>
+          <h3 className="text-2xl font-bold text-blue-500 mb-6">Tablette non configurée</h3>
           <p className="text-xl text-zinc-950 opacity-75 mb-8 leading-relaxed">
             {error || 'Aucune configuration trouvée pour cette tablette'}
           </p>
@@ -164,35 +210,50 @@ function VisitorDisplay() {
     );
   }
 
-  // ⭐ Utiliser enrichedElements au lieu de layout
   const elementsToDisplay = enrichedElements.length > 0 ? enrichedElements : layout;
 
   return (
-    <div className="w-full h-screen bg-white overflow-hidden relative">
-      {/* Header avec h1 blue-800 */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-xl border-b-4 border-blue-200 shadow-xl px-8 py-6">
-        <h1 className="text-4xl md:text-5xl font-black text-blue-800 text-center leading-tight mb-2">
+    <div 
+      className="w-full h-screen overflow-hidden relative"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundColor: backgroundImage ? 'transparent' : 'white'
+      }}
+    >
+      {/* Overlay pour améliorer la lisibilité si image de fond */}
+      {backgroundImage && (
+        <div className="absolute inset-0 bg-black/30"></div>
+      )}
+
+      <header className="absolute top-0 left-0 right-0 z-20 px-8 py-6">
+        <h2 className="text-4xl md:text-5xl font-black text-white text-center leading-tight mb-2"
+            style={{ 
+              textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.7)',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+            }}>
           {themeData.name}
-        </h1>
-        <h2 className="text-xl font-bold text-blue-500 text-center">
-          Musée des Transmissions
         </h2>
       </header>
 
-      {/* Contenu principal */}
-      <div className="w-full h-full pt-36 lg:pt-40 pb-6 relative overflow-hidden">
+      {/* Container avec scroll horizontal */}
+      <div className="w-full h-full pt-30 lg:pt-35 pb-12 relative z-10 overflow-x-auto overflow-y-hidden">
         {Array.isArray(elementsToDisplay) && elementsToDisplay.length > 0 ? (
-          elementsToDisplay.map((element, index) => (
-            <VisitorElement
-              key={`${element.id}-${index}`}
-              element={element}
-              themeData={themeData}
-              getMediaUrl={getMediaUrl}
-              getMediaType={getMediaType}
-              getMimeType={getMimeType}
-              zIndex={elementsToDisplay.length - index}
-            />
-          ))
+          <div className="inline-flex h-full gap-6 px-8 items-center">
+            {elementsToDisplay.map((element, index) => (
+              <VisitorElement
+                key={`${element.id}-${index}`}
+                element={element}
+                themeData={themeData}
+                modalConfigs={modalConfigs}
+                getMediaUrl={getMediaUrl}
+                getMediaType={getMediaType}
+                getMimeType={getMimeType}
+                zIndex={10 + index}
+              />
+            ))}
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center max-w-md">
@@ -203,7 +264,6 @@ function VisitorDisplay() {
         )}
       </div>
 
-      {/* Bouton admin discret */}
       <button
         onClick={() => navigate('/login')}
         className="fixed bottom-6 right-6 w-16 h-16 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-300 border-4 border-white flex items-center justify-center z-50 group"
@@ -218,17 +278,20 @@ function VisitorDisplay() {
   );
 }
 
-function VisitorElement({ element, themeData, getMediaUrl, getMediaType, getMimeType, zIndex }) {
+function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMediaType, getMimeType, zIndex }) {
   const renderContent = () => {
     switch (element.type) {
       case 'card':
-        console.log('🎴 Rendu carte avec data:', element.data);
+        const cardId = element.data?.id;
+        const modalLayout = cardId && modalConfigs[cardId] ? modalConfigs[cardId] : [];
+        
         return (
-          <div className="w-full h-full shadow-2xl rounded-3xl overflow-hidden border-4 border-blue-100">
+          <div>
             <MuseumCard 
               cardData={element.data}
               themeData={themeData}
               isConfigMode={false}
+              modalLayout={modalLayout}
             />
           </div>
         );
@@ -261,7 +324,6 @@ function VisitorElement({ element, themeData, getMediaUrl, getMediaType, getMime
               {mediaType === 'unknown' && (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
                   <div className="text-center p-8">
-                    <div className="text-6xl mb-4">📄</div>
                     <h3 className="text-2xl font-black text-zinc-950 mb-2">{element.data.userGivenName}</h3>
                     <p className="text-lg text-blue-500 font-mono font-bold">{element.data.extensionFile}</p>
                   </div>
@@ -303,10 +365,8 @@ function VisitorElement({ element, themeData, getMediaUrl, getMediaType, getMime
 
   return (
     <div
-      className="absolute shadow-2xl transition-all duration-300 hover:scale-105 hover:z-50 hover:shadow-3xl"
+      className="flex-shrink-0 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
       style={{
-        left: `${element.position.x}px`,
-        top: `${element.position.y}px`,
         width: `${element.size.width}px`,
         height: `${element.size.height}px`,
         zIndex: zIndex,
