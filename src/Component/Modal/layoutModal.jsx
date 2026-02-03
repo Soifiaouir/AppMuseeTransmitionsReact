@@ -2,6 +2,7 @@ import { Type, Palette, Image, FileText } from 'lucide-react';
 import DraggableElement from '../DragAndDrop/dragAndDrop.jsx';
 import { UPLOAD_URL } from '../../config.js';
 
+
 function ModalLayoutManager({ 
   cardData, 
   themeData, 
@@ -11,7 +12,8 @@ function ModalLayoutManager({
   onAddElement, 
   onUpdatePosition,
   onUpdateSize,
-  onRemove 
+  onRemove,
+  onBringToFront // Nouvelle prop
 }) {
   
   // Fonction pour obtenir l'URL de l'image de fond du thème
@@ -33,7 +35,7 @@ function ModalLayoutManager({
         ? `linear-gradient(135deg, ${themeBackgroundColor}ee 0%, ${themeBackgroundColor} 100%)` 
         : (cardBackgroundColor 
             ? `linear-gradient(135deg, ${cardBackgroundColor}ee 0%, ${cardBackgroundColor} 100%)` 
-            : 'linear-gradient(to-br, from-zinc-100 to-zinc-200)'));
+            : 'linear-gradient(to-br, #f4f4f5, #e4e4e7)'));
   
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -74,11 +76,11 @@ function ModalLayoutManager({
                     className="w-full p-3 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 rounded-lg text-sm transition text-left"
                   >
                     <div className="font-medium text-emerald-900 text-xs truncate">
-                      📄 {moreInfo.Title || 'Section sans titre'}
+                      📄 {moreInfo.Title || moreInfo.title || 'Section sans titre'}
                     </div>
                     <div className="text-xs text-zinc-600 opacity-75 line-clamp-2 mt-1">
-                      {moreInfo.details?.substring(0, 60) || 'Aucun détail'}
-                      {moreInfo.details && moreInfo.details.length > 60 && '...'}
+                      {(moreInfo.details || moreInfo.Details)?.substring(0, 60) || 'Aucun détail'}
+                      {(moreInfo.details || moreInfo.Details) && (moreInfo.details || moreInfo.Details).length > 60 && '...'}
                     </div>
                   </button>
                 ))}
@@ -87,7 +89,7 @@ function ModalLayoutManager({
           )}
 
           {/* Médias du thème */}
-          {themeData.medias && themeData.medias.length > 0 && (
+          {themeData?.medias && themeData.medias.length > 0 && (
             <div className="mb-4">
               <h5 className="font-semibold text-xs text-zinc-950 mb-2 flex items-center gap-2">
                 <Image size={14} />
@@ -101,9 +103,9 @@ function ModalLayoutManager({
                     className="w-full p-2 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg text-sm transition"
                   >
                     <div className="font-medium text-purple-900 text-xs truncate">
-                      {media.userGivenName}
+                      {media.userGivenName || 'Média du thème'}
                     </div>
-                    <div className="text-xs text-zinc-950 opacity-75">{media.extensionFile}</div>
+                    <div className="text-xs text-zinc-600 opacity-75">{media.extensionFile}</div>
                   </button>
                 ))}
               </div>
@@ -118,11 +120,11 @@ function ModalLayoutManager({
                 Image de fond du thème
               </h5>
               <button
-                onClick={() => onAddElement('themeBackgroundImage', themeData.backgroundImage)}
+                onClick={() => onAddElement('media', themeData.backgroundImage)}
                 className="w-full p-3 bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 rounded-lg text-sm transition"
               >
                 <div className="font-medium text-indigo-900 text-xs truncate">
-                  {themeData.backgroundImage.userGivenName || 'Image du thème'}
+                   {themeData.backgroundImage.userGivenName || 'Image du thème'}
                 </div>
                 <div className="text-xs text-zinc-600 opacity-75">
                   {themeData.backgroundImage.extensionFile}
@@ -139,7 +141,7 @@ function ModalLayoutManager({
                 Couleur du thème
               </h5>
               <button
-                onClick={() => onAddElement('themeColor', themeData.themeBackgroundColor)}
+                onClick={() => onAddElement('color', themeData.themeBackgroundColor)}
                 className="w-full p-2 bg-zinc-50 hover:bg-zinc-100 border-2 border-zinc-200 rounded-lg text-sm transition flex items-center gap-2"
               >
                 <div 
@@ -148,7 +150,7 @@ function ModalLayoutManager({
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="font-medium text-xs truncate text-zinc-950">
-                    {themeData.themeBackgroundColor.name}
+                    {themeData.themeBackgroundColor.name || 'Couleur du thème'}
                   </div>
                   <div className="text-xs text-zinc-500">
                     {themeData.themeBackgroundColor.colorCode}
@@ -160,6 +162,7 @@ function ModalLayoutManager({
         </div>
       )}
 
+      {/* Canvas principal */}
       <div 
         className="flex-1 relative overflow-auto transition-colors duration-300"
         style={{ 
@@ -187,9 +190,9 @@ function ModalLayoutManager({
         {layout.length === 0 && !isConfiguring && (
           <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
             <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-2xl backdrop-blur-sm">
-              <h4 className="font-bold text-xl mb-4 text-zinc-950">{cardData.title}</h4>
+              <h4 className="font-bold text-xl mb-4 text-zinc-950">{cardData?.title}</h4>
               <div className="text-zinc-950 opacity-75 leading-relaxed whitespace-pre-wrap">
-                {cardData.detail || "Aucune information disponible"}
+                {cardData?.detail || "Aucune information disponible"}
               </div>
             </div>
           </div>
@@ -203,6 +206,7 @@ function ModalLayoutManager({
             onPositionChange={onUpdatePosition}
             onSizeChange={onUpdateSize}
             onRemove={onRemove}
+            onBringToFront={onBringToFront}
           />
         ))}
       </div>

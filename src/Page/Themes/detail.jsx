@@ -50,8 +50,12 @@ function ThemeDetail() {
 
   if (loading) {
     return (
-      <div className="w-full h-screen bg-white flex items-center justify-center p-8">
-        <div className="text-2xl font-bold text-zinc-950">Chargement...</div>
+      <div className="w-full h-screen bg-white flex items-center justify-center p-12">
+        <div className="text-center max-w-md mx-auto">
+          <div className="w-24 h-24 border-8 border-blue-100 border-t-blue-800 rounded-full animate-spin mx-auto mb-8 shadow-2xl"></div>
+          <h1 className="text-4xl font-black text-blue-800 mb-4">Chargement</h1>
+          <p className="text-lg text-zinc-950 opacity-60">Veuillez patienter...</p>
+        </div>
       </div>
     );
   }

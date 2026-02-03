@@ -1,53 +1,58 @@
 import { BASE_URL, USERNAME, PASSWORD } from '../../config.js';
 
-// Variable pour stocker le token
+// Variables pour stocker les tokens
 let authToken = null;
-let membreToken = null;
+let refreshToken = null;
 
- // Fonction pour s'authentifier et obtenir le token
+// Fonction pour s'authentifier et obtenir les tokens
 export const authenticate = async (USERNAME, PASSWORD) => {
-  try{  
+  try {
     const response = await fetch(`${BASE_URL}/login_check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: USERNAME,
-          password: PASSWORD,
-        })
-      });
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: USERNAME,
+        password: PASSWORD,
+      }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Erreur d\'authentification');
-      }
+    if (!response.ok) {
+      throw new Error('Erreur d\'authentification');
+    }
 
-      const data = await response.json();
-      authToken = data.token;
-      console.log('Authentification réussie');
-      return authToken;
-
-  }catch (error) {
+    const data = await response.json();
+    authToken = data.token;
+    refreshToken = data.refresh_token;
+    console.log('Authentification réussie');
+    return authToken;
+  } catch (error) {
     console.error('Erreur lors de l\'authentification:', error.message);
     throw error;
   }
-  }
+};
 
 export const loginMembre = async (username, password) => {
   try {
-
     const response = await fetch(`${BASE_URL}/login_check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     });
 
     if (!response.ok) throw new Error('Identifiants membre invalides');
 
     const data = await response.json();
-    return data.token;
+    const token = data.token;
+    const refresh = data.refresh_token;
 
-  }catch (error) {
+    // On stocke dans localStorage avec les deux tokens séparés
+    localStorage.setItem('token', token);
+    localStorage.setItem('refresh_token', refresh);
+
+    return token;
+  } catch (error) {
     console.error('Erreur login membre:', error);
     throw error;
   }
@@ -55,81 +60,109 @@ export const loginMembre = async (username, password) => {
 
 export const logoutMembre = () => {
   membreToken = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
 };
 
-//recupere le token pour le membre dans le localStorage
+// Récupère le token membre depuis localStorage
 export const getMembreToken = () => {
-  const tokenString = localStorage.getItem('token');
-  if(!tokenString) return null;
+  return localStorage.getItem('token');
+};
 
-  try{
-    const userToken = JSON.parse(tokenString);
-    return userToken?.token;
-  } catch {
-    return null;
+// Fonction interne pour rafraîchir le token
+const refreshAuthToken = async () => {
+  if (!refreshToken) throw new Error('Pas de refresh_token disponible');
+
+  const response = await fetch(`${BASE_URL}/api/token/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Impossible de rafraîchir le token');
   }
+
+  const data = await response.json();
+  authToken = data.token;
+  refreshToken = data.refresh_token; // nouveau refresh_token si single_use
+  return authToken;
+};
+
+// Wrapper pour toutes les requêtes authentifiées
+const fetchWithAuth = async (url, options = {}) => {
+  if (!authToken) {
+    await authenticate(USERNAME, PASSWORD);
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${authToken}`,
+    ...options.headers,
+  };
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) {
+    // On tente de rafraîchir le token
+    try {
+      await refreshAuthToken();
+      // On relance la même requête avec le nouveau token
+      return fetchWithAuth(url, options);
+    } catch (refreshError) {
+      // Si le refresh échoue, on invalide tout
+      authToken = null;
+      refreshToken = null;
+      throw refreshError;
+    }
+  }
+
+  return response;
 };
 
 /*****************************************************APPEL THEME ***********************************/
 
-//Fonction pour recuperer la liste des themes 
-export const getThemes = async () => {
-  try{
-   // S'authentifier si pas de token
-    if (!authToken) {
-      await authenticate(USERNAME, PASSWORD);
-    }
-
-    const response = await fetch(`${BASE_URL}/themes`, {
-      method: 'GET',
-      headers: {  
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-    });
+export const getThemes = async (page = 1) => {
+  try {
+    const response = await fetchWithAuth(
+      `${BASE_URL}/themes?archived=false&page=${page}&order[name]=asc`
+    );
 
     if (!response.ok) {
-      // Si 401, réessayer l'authentification
-      if (response.status === 401) {
-        authToken = null;
-        await authenticate(USERNAME, PASSWORD);
-        return getThemes();
-      }
       throw new Error(`Erreur de récupération de la liste des thèmes`);
     }
 
     const data = await response.json();
-    console.log(`Thème récupéré:`, data);
-    return data;
+    console.log(`✅ Données brutes de l'API:`, data);
+
+    const themesArray = data.member || data['hydra:member'] || [];
+    const total = data.totalItems || data['hydra:totalItems'] || 0;
+
+    console.log(`📊 Après traitement:`, {
+      themes: themesArray,
+      totalItems: total,
+      currentPage: page,
+      nombreDeThemes: themesArray.length,
+    });
+
+    return {
+      themes: themesArray,
+      totalItems: total,
+      currentPage: page,
+    };
   } catch (error) {
     console.error(`Erreur lors de la récupération des themes:`, error.message);
     throw error;
   }
-}
+};
 
-// Fonction pour récupérer un thème par ID
 export const getThemeById = async (id) => {
   try {
-    // S'authentifier si pas de token
-    if (!authToken) {
-      await authenticate(USERNAME, PASSWORD);
-    }
-
-    const response = await fetch(`${BASE_URL}/themes/${id}`, {
-      method: 'GET',
-      headers: {  
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-    });
+    const response = await fetchWithAuth(`${BASE_URL}/themes/${id}`);
 
     if (!response.ok) {
-      // Si 401, réessayer l'authentification
-      if (response.status === 401) {
-        authToken = null;
-        await authenticate(USERNAME, PASSWORD);
-        return getThemeById(id);
-      }
       throw new Error(`Erreur de récupération du thème ${id}`);
     }
 
@@ -142,31 +175,13 @@ export const getThemeById = async (id) => {
   }
 };
 
-// Dans apiService.js
-
 /*****************************************************APPEL CARDS ***********************************/
 
-// Fonction pour récupérer toutes les cartes
 export const getCards = async () => {
   try {
-    if (!authToken) {
-      await authenticate(USERNAME, PASSWORD);
-    }
-
-    const response = await fetch(`${BASE_URL}/cards`, {
-      method: 'GET',
-      headers: {  
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-    });
+    const response = await fetchWithAuth(`${BASE_URL}/cards`);
 
     if (!response.ok) {
-      if (response.status === 401) {
-        authToken = null;
-        await authenticate(USERNAME, PASSWORD);
-        return getCards();
-      }
       throw new Error(`Erreur de récupération de la liste des cartes`);
     }
 
@@ -179,27 +194,11 @@ export const getCards = async () => {
   }
 };
 
-// Fonction pour récupérer une carte par ID
 export const getCardById = async (id) => {
   try {
-    if (!authToken) {
-      await authenticate(USERNAME, PASSWORD);
-    }
-
-    const response = await fetch(`${BASE_URL}/cards/${id}`, {
-      method: 'GET',
-      headers: {  
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-    });
+    const response = await fetchWithAuth(`${BASE_URL}/cards/${id}`);
 
     if (!response.ok) {
-      if (response.status === 401) {
-        authToken = null;
-        await authenticate(USERNAME, PASSWORD);
-        return getCardById(id);
-      }
       throw new Error(`Erreur de récupération de la carte ${id}`);
     }
 
