@@ -73,7 +73,7 @@ export const getMembreToken = () => {
 const refreshAuthToken = async () => {
   if (!refreshToken) throw new Error('Pas de refresh_token disponible');
 
-  const response = await fetch(`${BASE_URL}/api/token/refresh`, {
+  const response = await fetch(`${BASE_URL}/token/refresh`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
