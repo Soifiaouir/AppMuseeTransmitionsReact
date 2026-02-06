@@ -7,10 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
+
+# Local config
+.env
+.env.local
 *.local
+
+# Symfony cache/var
+var/
+var/cache/*
+var/log/*
 
 # Editor directories and files
 .vscode/*
@@ -21,6 +31,24 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.swp
+*.swo
 
-.env
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# Symfony Flex
+.flex-backups/
