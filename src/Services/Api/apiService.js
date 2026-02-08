@@ -15,7 +15,7 @@ const authenticateApp = async () => {
   try {
     console.log('Authentification technique app -> API avec:', USERNAME);
     
-    const response = await fetch(`${BASE_URL}/login_check`, {
+    const response = await fetch(`${BASE_URL}/api/login_check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,7 +46,7 @@ export const loginMembre = async (username, password) => {
   try {
     console.log('Login membre avec:', username);
     
-    const response = await fetch(`${BASE_URL}/login_check`, {
+    const response = await fetch(`${BASE_URL}/api/login_check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -97,7 +97,7 @@ const refreshMembreToken = async () => {
     throw new Error('Pas de refresh_token disponible');
   }
 
-  const response = await fetch(`${BASE_URL}/token/refresh`, {
+  const response = await fetch(`${BASE_URL}/api/token/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: membreRefreshToken }),
@@ -167,7 +167,7 @@ const fetchWithAuth = async (url, options = {}) => {
 export const getThemes = async (page = 1) => {
   try {
     const response = await fetchWithAuth(
-      `${BASE_URL}/themes?archived=false&page=${page}&order[name]=asc`
+      `${BASE_URL}/api/themes?archived=false&page=${page}&order[name]=asc`
     );
 
     if (!response.ok) {
@@ -193,7 +193,7 @@ export const getThemes = async (page = 1) => {
 
 export const getThemeById = async (id) => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/themes/${id}`);
+    const response = await fetchWithAuth(`${BASE_URL}/api/themes/${id}`);
 
     if (!response.ok) {
       throw new Error(`Erreur de récupération du thème ${id}`);
@@ -212,7 +212,7 @@ export const getThemeById = async (id) => {
 // ============================================
 export const getCards = async () => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/cards`);
+    const response = await fetchWithAuth(`${BASE_URL}/api/cards`);
 
     if (!response.ok) {
       throw new Error('Erreur de récupération de la liste des cartes');
@@ -228,7 +228,7 @@ export const getCards = async () => {
 
 export const getCardById = async (id) => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/cards/${id}`);
+    const response = await fetchWithAuth(`${BASE_URL}/api/cards/${id}`);
 
     if (!response.ok) {
       throw new Error(`Erreur de récupération de la carte ${id}`);
