@@ -107,7 +107,8 @@ const refreshMembreToken = async () => {
     throw new Error('Impossible de rafraîchir le token');
   }
 
-  const data = await response.json();
+  try{
+    const data = await response.json();
   membreAuthToken = data.token;
   membreRefreshToken = data.refresh_token;
   
@@ -115,6 +116,12 @@ const refreshMembreToken = async () => {
   localStorage.setItem('refresh_token', membreRefreshToken);
   
   return membreAuthToken;
+   } catch (error) {
+    console.error('Erreur refresh:', error);
+    // Si le refresh échoue, déconnecter l'utilisateur
+    logoutMembre();
+    throw error;
+  }
 };
 
 // ============================================
