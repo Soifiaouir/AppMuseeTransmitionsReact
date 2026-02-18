@@ -1,52 +1,38 @@
 import { BASE_URL, USERNAME, PASSWORD } from '../../config.js';
 
-// Token technique pour l'app React -> API
-let appAuthToken = null;
-let appRefreshToken = null;
-
-// Token membre (utilisateur connecté)
-let membreAuthToken = null;
-let membreRefreshToken = null;
+let authToken = null;
+let refreshToken = null;
 
 // ============================================
 // AUTHENTIFICATION TECHNIQUE (APP -> API)
 // ============================================
-const authenticateApp = async () => {
+export const authenticate = async (user, pass) => {
   try {
-    console.log('Authentification technique app -> API avec:', USERNAME);
-    
-    const response = await fetch(`${BASE_URL}/api/login_check`, {
+    const response = await fetch(`${BASE_URL}/login_check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: USERNAME,
-        password: PASSWORD,
-      }),
+      body: JSON.stringify({ username: user, password: pass }),
     });
 
-    if (!response.ok) {
-      throw new Error('Erreur authentification technique');
-    }
+    if (!response.ok) throw new Error('Erreur authentification technique');
 
     const data = await response.json();
-    appAuthToken = data.token;
-    appRefreshToken = data.refresh_token;
-    console.log('Authentification technique réussie');
-    return appAuthToken;
+    authToken = data.token;
+    refreshToken = data.refresh_token;
+    console.log('Authentification technique reussie');
+    return authToken;
   } catch (error) {
-    console.error('Erreur authentification technique:', error.message);
+    console.error('Erreur authentification:', error.message);
     throw error;
   }
 };
 
 // ============================================
-// AUTHENTIFICATION MEMBRE (UTILISATEUR)
+// AUTHENTIFICATION MEMBRE
 // ============================================
 export const loginMembre = async (username, password) => {
   try {
-    console.log('Login membre avec:', username);
-    
-    const response = await fetch(`${BASE_URL}/api/login_check`, {
+    const response = await fetch(`${BASE_URL}/login_check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -55,15 +41,13 @@ export const loginMembre = async (username, password) => {
     if (!response.ok) throw new Error('Identifiants membre invalides');
 
     const data = await response.json();
-    membreAuthToken = data.token;
-    membreRefreshToken = data.refresh_token;
 
-    // Stocker dans localStorage
-    localStorage.setItem('token', membreAuthToken);
-    localStorage.setItem('refresh_token', membreRefreshToken);
+    // Stocke uniquement le refresh_token
+    // Le token JWT est géré par useToken via setToken dans Login.jsx
+    localStorage.setItem('refresh_token', data.refresh_token);
 
-    console.log('Login membre réussi');
-    return membreAuthToken;
+    console.log('Login membre reussi');
+    return data.token;
   } catch (error) {
     console.error('Erreur login membre:', error);
     throw error;
@@ -71,96 +55,71 @@ export const loginMembre = async (username, password) => {
 };
 
 export const logoutMembre = () => {
-  membreAuthToken = null;
-  membreRefreshToken = null;
+  authToken = null;
+  refreshToken = null;
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
-  console.log('Membre déconnecté');
+  console.log('Membre deconnecte');
 };
 
 export const getMembreToken = () => {
-  if (!membreAuthToken) {
-    membreAuthToken = localStorage.getItem('token');
-  }
-  return membreAuthToken;
+  return localStorage.getItem('token');
 };
 
 // ============================================
 // REFRESH TOKEN
 // ============================================
-const refreshMembreToken = async () => {
-  if (!membreRefreshToken) {
-    membreRefreshToken = localStorage.getItem('refresh_token');
-  }
-  
-  if (!membreRefreshToken) {
-    throw new Error('Pas de refresh_token disponible');
-  }
+const refreshAuthToken = async () => {
+  const storedRefresh = refreshToken || localStorage.getItem('refresh_token');
+  if (!storedRefresh) throw new Error('Pas de refresh_token disponible');
 
-  const response = await fetch(`${BASE_URL}/api/token/refresh`, {
+  const response = await fetch(`${BASE_URL}/token/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: membreRefreshToken }),
+    body: JSON.stringify({ refresh_token: storedRefresh }),
   });
 
   if (!response.ok) {
-    throw new Error('Impossible de rafraîchir le token');
+    logoutMembre();
+    throw new Error('Impossible de rafraichir le token');
   }
 
-  try{
-    const data = await response.json();
-  membreAuthToken = data.token;
-  membreRefreshToken = data.refresh_token;
-  
-  localStorage.setItem('token', membreAuthToken);
-  localStorage.setItem('refresh_token', membreRefreshToken);
-  
-  return membreAuthToken;
-   } catch (error) {
-    console.error('Erreur refresh:', error);
-    // Si le refresh échoue, déconnecter l'utilisateur
-    logoutMembre();
-    throw error;
-  }
+  const data = await response.json();
+  authToken = data.token;
+  refreshToken = data.refresh_token;
+  localStorage.setItem('token', authToken);
+  localStorage.setItem('refresh_token', refreshToken);
+  return authToken;
 };
 
 // ============================================
-// WRAPPER POUR LES REQUÊTES AUTHENTIFIÉES
+// WRAPPER REQUETES AUTHENTIFIEES
 // ============================================
 const fetchWithAuth = async (url, options = {}) => {
-  // Priorité 1 : Token membre (si utilisateur connecté)
-  let token = getMembreToken();
-  
-  // Priorité 2 : Token technique app (si pas de membre connecté)
-  if (!token) {
-    if (!appAuthToken) {
-      await authenticateApp();
+  if (!authToken) {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      authToken = storedToken;
+    } else {
+      await authenticate(USERNAME, PASSWORD);
     }
-    token = appAuthToken;
   }
 
   const headers = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${authToken}`,
     ...options.headers,
   };
 
   const response = await fetch(url, { ...options, headers });
 
-  // Gérer le 401
   if (response.status === 401) {
     try {
-      // Si on avait un token membre, essayer de le rafraîchir
-      if (membreAuthToken) {
-        await refreshMembreToken();
-      } else {
-        // Sinon rafraîchir le token technique
-        await authenticateApp();
-      }
-      // Relancer la requête
+      await refreshAuthToken();
       return fetchWithAuth(url, options);
     } catch (refreshError) {
-      console.error('Échec refresh token:', refreshError);
+      authToken = null;
+      refreshToken = null;
       throw refreshError;
     }
   }
@@ -174,42 +133,28 @@ const fetchWithAuth = async (url, options = {}) => {
 export const getThemes = async (page = 1) => {
   try {
     const response = await fetchWithAuth(
-      `${BASE_URL}/api/themes?archived=false&page=${page}&order[name]=asc`
+      `${BASE_URL}/themes?archived=false&page=${page}&order[name]=asc`
     );
-
-    if (!response.ok) {
-      throw new Error(`Erreur de récupération de la liste des thèmes`);
-    }
+    if (!response.ok) throw new Error('Erreur recuperation themes');
 
     const data = await response.json();
-    console.log('Données brutes de l\'API:', data);
-
     const themesArray = data.member || data['hydra:member'] || [];
     const total = data.totalItems || data['hydra:totalItems'] || 0;
 
-    return {
-      themes: themesArray,
-      totalItems: total,
-      currentPage: page,
-    };
+    return { themes: themesArray, totalItems: total, currentPage: page };
   } catch (error) {
-    console.error('Erreur lors de la récupération des themes:', error.message);
+    console.error('Erreur themes:', error.message);
     throw error;
   }
 };
 
 export const getThemeById = async (id) => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/api/themes/${id}`);
-
-    if (!response.ok) {
-      throw new Error(`Erreur de récupération du thème ${id}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await fetchWithAuth(`${BASE_URL}/themes/${id}`);
+    if (!response.ok) throw new Error(`Erreur recuperation theme ${id}`);
+    return await response.json();
   } catch (error) {
-    console.error(`Erreur lors de la récupération du thème ${id}:`, error.message);
+    console.error(`Erreur theme ${id}:`, error.message);
     throw error;
   }
 };
@@ -220,15 +165,10 @@ export const getThemeById = async (id) => {
 export const getCards = async () => {
   try {
     const response = await fetchWithAuth(`${BASE_URL}/api/cards`);
-
-    if (!response.ok) {
-      throw new Error('Erreur de récupération de la liste des cartes');
-    }
-
-    const data = await response.json();
-    return data;
+    if (!response.ok) throw new Error('Erreur recuperation cartes');
+    return await response.json();
   } catch (error) {
-    console.error('Erreur lors de la récupération des cartes:', error.message);
+    console.error('Erreur cartes:', error.message);
     throw error;
   }
 };
@@ -236,15 +176,10 @@ export const getCards = async () => {
 export const getCardById = async (id) => {
   try {
     const response = await fetchWithAuth(`${BASE_URL}/api/cards/${id}`);
-
-    if (!response.ok) {
-      throw new Error(`Erreur de récupération de la carte ${id}`);
-    }
-
-    const data = await response.json();
-    return data;
+    if (!response.ok) throw new Error(`Erreur recuperation carte ${id}`);
+    return await response.json();
   } catch (error) {
-    console.error(`Erreur lors de la récupération de la carte ${id}:`, error.message);
+    console.error(`Erreur carte ${id}:`, error.message);
     throw error;
   }
 };
