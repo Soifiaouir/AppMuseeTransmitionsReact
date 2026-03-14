@@ -8,7 +8,7 @@ let refreshToken = null;
 // ============================================
 export const authenticate = async (user, pass) => {
   try {
-    const response = await fetch(`${BASE_URL}/login_check`, {
+    const response = await fetch(`${BASE_URL}/login_check`, {  // BASE_URL contient déjà /api
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password: pass }),
@@ -32,7 +32,7 @@ export const authenticate = async (user, pass) => {
 // ============================================
 export const loginMembre = async (username, password) => {
   try {
-    const response = await fetch(`${BASE_URL}/login_check`, {
+    const response = await fetch(`${BASE_URL}/login_check`, {  // BASE_URL contient déjà /api
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -41,9 +41,6 @@ export const loginMembre = async (username, password) => {
     if (!response.ok) throw new Error('Identifiants membre invalides');
 
     const data = await response.json();
-
-    // Stocke uniquement le refresh_token
-    // Le token JWT est géré par useToken via setToken dans Login.jsx
     localStorage.setItem('refresh_token', data.refresh_token);
 
     console.log('Login membre reussi');
@@ -73,7 +70,7 @@ const refreshAuthToken = async () => {
   const storedRefresh = refreshToken || localStorage.getItem('refresh_token');
   if (!storedRefresh) throw new Error('Pas de refresh_token disponible');
 
-  const response = await fetch(`${BASE_URL}/token/refresh`, {
+  const response = await fetch(`${BASE_URL}/token/refresh`, {  // BASE_URL contient déjà /api
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: storedRefresh }),
@@ -133,7 +130,7 @@ const fetchWithAuth = async (url, options = {}) => {
 export const getThemes = async (page = 1) => {
   try {
     const response = await fetchWithAuth(
-      `${BASE_URL}/themes?archived=false&page=${page}&order[name]=asc`
+      `${BASE_URL}/themes?archived=false&page=${page}&order[name]=asc`  // BASE_URL contient déjà /api
     );
     if (!response.ok) throw new Error('Erreur recuperation themes');
 
@@ -150,7 +147,7 @@ export const getThemes = async (page = 1) => {
 
 export const getThemeById = async (id) => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/themes/${id}`);
+    const response = await fetchWithAuth(`${BASE_URL}/themes/${id}`);  // BASE_URL contient déjà /api
     if (!response.ok) throw new Error(`Erreur recuperation theme ${id}`);
     return await response.json();
   } catch (error) {
@@ -164,7 +161,7 @@ export const getThemeById = async (id) => {
 // ============================================
 export const getCards = async () => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/api/cards`);
+    const response = await fetchWithAuth(`${BASE_URL}/cards`);  // ✅ CORRIGÉ : plus de /api/api
     if (!response.ok) throw new Error('Erreur recuperation cartes');
     return await response.json();
   } catch (error) {
@@ -175,7 +172,7 @@ export const getCards = async () => {
 
 export const getCardById = async (id) => {
   try {
-    const response = await fetchWithAuth(`${BASE_URL}/api/cards/${id}`);
+    const response = await fetchWithAuth(`${BASE_URL}/cards/${id}`);  // ✅ CORRIGÉ : plus de /api/api
     if (!response.ok) throw new Error(`Erreur recuperation carte ${id}`);
     return await response.json();
   } catch (error) {
