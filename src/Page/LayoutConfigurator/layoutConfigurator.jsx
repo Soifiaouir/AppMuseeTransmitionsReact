@@ -132,8 +132,8 @@ function LayoutConfigurator() {
 
     const bgPath = themeData.backgroundImage.publicPath;
     if (bgPath) {
-      const cleanPath = bgPath.replace(/^\/uploads\/media\//, '');
-      const fullUrl = `${UPLOAD_URL}/${cleanPath}`;
+      
+      const fullUrl = `${UPLOAD_URL}`;
       return fullUrl;
     }
 

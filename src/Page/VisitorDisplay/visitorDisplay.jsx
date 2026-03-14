@@ -131,9 +131,8 @@ function VisitorDisplay() {
   };
 
   const getMediaUrl = (media) => {
-    const path = media.publicPath.replace('/uploads/media/', '');
-    return `${UPLOAD_URL}/${path}`;
-  };
+  return `${UPLOAD_URL}${media.publicPath}`;
+};
 
   const getMediaType = (media) => {
     const ext = media.extensionFile.toLowerCase();
@@ -153,21 +152,11 @@ function VisitorDisplay() {
   };
 
   const getBackgroundImage = () => {
-    if (!themeData) return null;
-
-    if (!themeData.backgroundImage || themeData.backgroundImage.length === 0) {
-      return null;
-    }
-
-    const bgPath = themeData.backgroundImage.publicPath;
-    if (bgPath) {
-      const cleanPath = bgPath.replace(/^\/uploads\/media\//, '');
-      const fullUrl = `${UPLOAD_URL}/${cleanPath}`;
-      return fullUrl;
-    }
-
-    return null;
-  };
+  if (!themeData?.backgroundImage) return null;
+  const bgPath = themeData.backgroundImage.publicPath;
+  if (bgPath) return `${UPLOAD_URL}${bgPath}`;
+  return null;
+};
 
   const backgroundImage = getBackgroundImage();
 
@@ -286,14 +275,14 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
         const modalLayout = cardId && modalConfigs[cardId] ? modalConfigs[cardId] : [];
         
         return (
-          <div>
+          
             <MuseumCard 
               cardData={element.data}
               themeData={themeData}
               isConfigMode={false}
               modalLayout={modalLayout}
             />
-          </div>
+          
         );
       
       case 'media':

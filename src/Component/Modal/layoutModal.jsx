@@ -19,8 +19,7 @@ function ModalLayoutManager({
   // Fonction pour obtenir l'URL de l'image de fond du thème
   const getThemeBackgroundUrl = () => {
     if (!themeData?.backgroundImage?.publicPath) return null;
-    const cleanPath = themeData.backgroundImage.publicPath.replace(/^\/uploads\/media\//, '');
-    return `${UPLOAD_URL}/${cleanPath}`;
+    return `${UPLOAD_URL}`;
   };
 
   const themeBackgroundUrl = getThemeBackgroundUrl();

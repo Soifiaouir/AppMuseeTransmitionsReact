@@ -67,20 +67,21 @@ function MuseumCard({ cardData, themeData, isConfigMode = false, onConfigureModa
       return null;
     }
 
-    const firstImage = actualCard.medias.find((m) => {
-      const ext = m.extensionFile?.toLowerCase();
-      const isImage = ext && ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
-      return m.type === 'image' && isImage;
-    });
+    const firstImage = actualCard.medias?.find((m) => {
+    const ext = m.extensionFile?.toLowerCase();
+    return m.type === 'image' && ext && ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+  });
 
-    if (firstImage?.publicPath) {
-      const cleanPath = firstImage.publicPath.replace(/^\/uploads\/media\//, '');
-      const fullUrl = `${UPLOAD_URL}/${cleanPath}`;
-      return fullUrl;
-    }
+  console.log('firstImage:', firstImage);
+  console.log('publicPath:', firstImage?.publicPath);
+  console.log('URL finale:', `${UPLOAD_URL}${firstImage?.publicPath}`);
 
-    return null;
-  };
+  if (firstImage?.publicPath) {
+    return `${UPLOAD_URL}${firstImage.publicPath}`;
+  }
+
+  return null;
+};
 
   const getBackgroundImage = () => {
     if (!actualCard) return null;
@@ -91,8 +92,8 @@ function MuseumCard({ cardData, themeData, isConfigMode = false, onConfigureModa
 
     const bgPath = actualCard.backgroundImageUrls[0];
     if (bgPath) {
-      const cleanPath = bgPath.replace(/^\/uploads\/media\//, '');
-      const fullUrl = `${UPLOAD_URL}/${cleanPath}`;
+      
+      const fullUrl = `${UPLOAD_URL}`;
       return fullUrl;
     }
 
@@ -135,7 +136,8 @@ const getTextColor = () => {
 
   return (
     <>
-<div className="h-[38rem] w-[25rem] relative overflow-hidden" style={{ perspective: '2000px' }}>        <div
+      <div className="h-full w-full relative" style={{ perspective: '2000px' }}>     
+        <div
           className="relative w-full h-full transition-all duration-700"
           style={{
             transformStyle: 'preserve-3d',

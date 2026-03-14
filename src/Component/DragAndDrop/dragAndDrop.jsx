@@ -123,8 +123,7 @@ function DraggableElement({
         const isVideo = ['mp4', 'webm', 'ogg', 'mpeg'].includes(ext);
         const isAudio = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext);
         
-        const path = element.data.publicPath.replace('/uploads/media/', '');
-        const url = `${UPLOAD_URL}/${path}`;
+        const url = `${UPLOAD_URL}`;
 
         const getMimeType = () => {
           const types = {
