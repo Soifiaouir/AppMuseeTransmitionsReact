@@ -25,7 +25,9 @@ export default function useToken() {
 
   const [token, setToken] = useState(getToken());
 
-  const saveToken = (tokenString) => {
+  const saveToken = (userToken) => {
+    // Accepte aussi bien une string qu'un objet { token }
+    const tokenString = typeof userToken === 'object' ? userToken.token : userToken;
     localStorage.setItem('token', tokenString);
     setToken(tokenString);
   };

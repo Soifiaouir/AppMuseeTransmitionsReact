@@ -73,8 +73,8 @@ function LayoutConfigurator() {
     let width, height;
     
     if (type === 'card') {
-      width = windowWidth * 0.26;
-      height = windowHeight * 0.78;
+      width = windowWidth * 0.30;
+      height = windowHeight * 0.90;
     } else if (type === 'media') {
       width = windowWidth * 0.28;
       height = windowHeight * 0.45;

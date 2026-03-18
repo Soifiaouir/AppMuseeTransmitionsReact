@@ -124,7 +124,7 @@ const getTextColor = () => {
   // Si pas de carte valide, ne rien afficher
   if (!actualCard) {
     return (
-      <div className="h-[28rem] w-[22rem] flex items-center justify-center bg-red-100 rounded-3xl">
+      <div className="h-[30rem] w-[24rem] flex items-center justify-center bg-red-100 rounded-3xl">
         <p className="text-red-600 font-bold">Erreur : données de carte invalides</p>
       </div>
     );
