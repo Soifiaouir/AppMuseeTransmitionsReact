@@ -266,8 +266,8 @@ const getTextColor = () => {
           <div
             className="bg-white rounded-2xl shadow-2xl overflow-hidden"
             style={{ 
-              width: '22in',
-              height: '22in',
+              width: '28in',
+              height: '28in',
               maxWidth: '95vw',
               maxHeight: '95vh',
               zIndex: 1000000
