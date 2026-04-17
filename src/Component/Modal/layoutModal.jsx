@@ -17,10 +17,10 @@ function ModalLayoutManager({
 }) {
   
   // Fonction pour obtenir l'URL de l'image de fond du thème
-  const getThemeBackgroundUrl = () => {
-    if (!themeData?.backgroundImage?.publicPath) return null;
-    return `${UPLOAD_URL}`;
-  };
+const getThemeBackgroundUrl = () => {
+  if (!themeData?.backgroundImage?.publicPath) return null;
+  return `${UPLOAD_URL}${themeData.backgroundImage.publicPath}`;
+};
 
   const themeBackgroundUrl = getThemeBackgroundUrl();
   const themeBackgroundColor = themeData?.themeBackgroundColor?.colorCode;

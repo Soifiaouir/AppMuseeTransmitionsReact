@@ -323,8 +323,16 @@ function LayoutConfigurator() {
       {/* Modal configuration carte */}
       {editingCardModal && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-center z-50 p-8">
-          <div className="w-full max-w-6xl max-h-[95vh] bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white/20">
-            <ModalConfigurable
+              <div
+                className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white/20"
+                style={{
+                  width: '28in',
+                  height: '28in',
+                  maxWidth: '95vw',
+                  maxHeight: '95vh',
+                }}
+              >            
+              <ModalConfigurable
               cardData={editingCardModal}
               themeData={themeData}
               layout={modalLayout}
