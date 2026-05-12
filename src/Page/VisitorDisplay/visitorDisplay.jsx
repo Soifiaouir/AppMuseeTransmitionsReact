@@ -320,16 +320,22 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
       // sandbox="allow-scripts allow-same-origin" : permissions minimales pour que le jeu fonctionne
       // Si le jeu est bloqué par X-Frame-Options, demander à l'auteur d'autoriser l'iframe côté serveur
       case 'game':
-  return (
-    <div
-      onClick={() => window.open(element.data.url, '_blank')}
-      className="w-full h-full bg-white rounded-3xl shadow-2xl border-4 border-green-100 overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-3xl transition-all duration-300 hover:border-green-400"
-    >
-      <div className="text-8xl mb-6">🎮</div>
-      <h3 className="font-black text-2xl text-zinc-950 text-center px-6">{element.data.title}</h3>
-      <p className="text-green-500 font-bold mt-3">Appuyer pour jouer →</p>
-    </div>
-  );
+        return (
+          <div
+            onClick={() => window.open(element.data.url, '_blank')}
+            className="w-full h-full rounded-3xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300"
+          >
+            <div className="text-8xl mb-6">🎮</div>
+            <h3 className="font-black text-2xl text-white text-center px-6"
+                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+              {element.data.title}
+            </h3>
+            <p className="text-white font-bold mt-3"
+              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+              Appuyer pour jouer →
+            </p>
+          </div>
+        );
 
       case 'color':
         return (
