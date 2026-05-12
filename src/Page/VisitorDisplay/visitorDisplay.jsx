@@ -15,7 +15,7 @@ function VisitorDisplay() {
   const [enrichedElements, setEnrichedElements] = useState([]);
   const [modalConfigs, setModalConfigs] = useState({});
   const [lastActivity, setLastActivity] = useState(Date.now());
-  // AJOUT : state pour le jeu actuellement ouvert en modale
+  // Jeu actuellement ouvert en modale plein écran
   const [activeGame, setActiveGame] = useState(null);
 
   useEffect(() => {
@@ -24,13 +24,11 @@ function VisitorDisplay() {
 
   useEffect(() => {
     const handleActivity = () => setLastActivity(Date.now());
-
     window.addEventListener('click', handleActivity);
     window.addEventListener('touchstart', handleActivity);
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
     window.addEventListener('scroll', handleActivity);
-
     return () => {
       window.removeEventListener('click', handleActivity);
       window.removeEventListener('touchstart', handleActivity);
@@ -40,8 +38,7 @@ function VisitorDisplay() {
     };
   }, []);
 
-  // Timer inactivité — refresh après 1m30
-  // MODIFIÉ : on ne refresh pas si un jeu est ouvert
+  // Timer inactivité suspendu si un jeu est ouvert
   useEffect(() => {
     const inactivityTimer = setInterval(() => {
       const timeSinceLastActivity = Date.now() - lastActivity;
@@ -49,14 +46,12 @@ function VisitorDisplay() {
         window.location.reload();
       }
     }, 1000);
-
     return () => clearInterval(inactivityTimer);
   }, [lastActivity, activeGame]);
 
   const loadTabletConfiguration = async () => {
     try {
       setIsLoading(true);
-
       const tabletConfig = getTabletLayout();
 
       if (!tabletConfig || !tabletConfig.themeId) {
@@ -86,11 +81,9 @@ function VisitorDisplay() {
         setThemeData(tabletConfig.themeData);
         const elements = Array.isArray(tabletConfig.elements) ? tabletConfig.elements : [];
         setLayout(elements);
-
         if (tabletConfig.modalConfigs) {
           setModalConfigs(tabletConfig.modalConfigs);
         }
-
         await enrichCardElements(elements);
       } else {
         setError('Impossible de charger la configuration');
@@ -106,7 +99,6 @@ function VisitorDisplay() {
         elements.map(async (element) => {
           if (element.type === 'card') {
             const cardId = typeof element.data === 'number' ? element.data : element.data?.id;
-
             if (cardId) {
               try {
                 const fullCardData = await getCardById(cardId);
@@ -116,11 +108,10 @@ function VisitorDisplay() {
               }
             }
           }
-          // Les éléments 'game' et 'media' sont passés tels quels
+          // 'game' et 'media' passent tels quels, pas d'enrichissement nécessaire
           return element;
         })
       );
-
       setEnrichedElements(enriched);
     } catch (error) {
       setEnrichedElements(elements);
@@ -235,7 +226,6 @@ function VisitorDisplay() {
                 getMediaType={getMediaType}
                 getMimeType={getMimeType}
                 zIndex={10 + index}
-                // AJOUT : callback pour ouvrir la modale jeu
                 onOpenGame={setActiveGame}
               />
             ))}
@@ -244,13 +234,15 @@ function VisitorDisplay() {
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center max-w-md">
               <h2 className="text-3xl font-bold text-blue-500 mb-4">Aucun élément à afficher</h2>
-              <p className="text-lg text-zinc-950 opacity-75">Le thème est configuré mais ne contient aucun élément</p>
+              <p className="text-lg text-zinc-950 opacity-75">
+                Le thème est configuré mais ne contient aucun élément
+              </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bouton admin */}
+      {/* Bouton admin fixe */}
       <button
         onClick={() => navigate('/login')}
         className="fixed bottom-6 right-6 w-16 h-16 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-300 border-4 border-white flex items-center justify-center z-50"
@@ -262,9 +254,9 @@ function VisitorDisplay() {
         </svg>
       </button>
 
-      {/* AJOUT : Modale plein écran pour les jeux
-          Fonctionne en mode kiosk Chrome car tout reste dans la même fenêtre
-          Le timer d'inactivité est suspendu tant que la modale est ouverte */}
+      {/* Modale plein écran jeu
+          Reste dans la même fenêtre — compatible mode kiosk Chrome
+          Le timer d'inactivité est suspendu tant que activeGame est non null */}
       {activeGame && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col">
           <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
@@ -297,7 +289,6 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
       case 'card':
         const cardId = element.data?.id;
         const modalLayout = cardId && modalConfigs[cardId] ? modalConfigs[cardId] : [];
-
         return (
           <MuseumCard
             cardData={element.data}
@@ -311,7 +302,6 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
         const mediaType = getMediaType(element.data);
         const mediaUrl = getMediaUrl(element.data);
         const mimeType = getMimeType(element.data);
-
         return (
           <div className="w-full h-full p-6 bg-white rounded-3xl shadow-2xl border-4 border-blue-100 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-hidden rounded-2xl bg-zinc-50">
@@ -344,14 +334,16 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
             <div className="mt-4 pt-4 border-t-4 border-blue-100">
               <h3 className="font-black text-xl text-zinc-950 truncate">{element.data.userGivenName}</h3>
               {element.data.description && (
-                <p className="text-sm text-zinc-950 opacity-75 mt-2 leading-relaxed line-clamp-2">{element.data.description}</p>
+                <p className="text-sm text-zinc-950 opacity-75 mt-2 leading-relaxed line-clamp-2">
+                  {element.data.description}
+                </p>
               )}
             </div>
           </div>
         );
 
-      // AJOUT : logo cliquable — ouvre le jeu dans la modale interne
-      // Pas d'iframe directe ici, compatible mode kiosk Chrome
+      // Logo cliquable — ouvre le jeu dans la modale interne
+      // Pas de window.open, compatible mode kiosk Chrome
       case 'game':
         return (
           <div
@@ -410,7 +402,6 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
       {renderContent()}
     </div>
   );
-  
 }
 
 export default VisitorDisplay;
