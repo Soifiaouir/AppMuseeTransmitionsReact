@@ -258,27 +258,26 @@ function VisitorDisplay() {
           Reste dans la même fenêtre — compatible mode kiosk Chrome
           Le timer d'inactivité est suspendu tant que activeGame est non null */}
       {activeGame && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
-          <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
-            <h3 className="font-black text-xl text-white">{activeGame.title}</h3>
-            <button
-              onClick={() => setActiveGame(null)}
-              className="bg-red-500 hover:bg-red-600 text-white font-black px-6 py-2 rounded-xl transition-all active:scale-95"
-            >
-              ✕ Fermer
-            </button>
-          </div>
-          <div className="flex-1">
-            <iframe
-              src={activeGame.url}
-              className="w-full h-full border-0"
-              title={activeGame.title}
-              allow="fullscreen"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
-          </div>
-        </div>
-      )}
+  <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
+      <h3 className="font-black text-xl text-white">{activeGame.title}</h3>
+      <button
+        onClick={() => setActiveGame(null)}
+        className="bg-red-500 hover:bg-red-600 text-white font-black px-6 py-2 rounded-xl transition-all active:scale-95"
+      >
+        ✕ Fermer
+      </button>
+    </div>
+    <div className="flex-1">
+      jsx<iframe
+  src={activeGame.url}
+  className="w-full h-full border-0"
+  title={activeGame.title}
+  allow="fullscreen"
+/>
+    </div>
+  </div>
+)}
     </div>
   );
 }
