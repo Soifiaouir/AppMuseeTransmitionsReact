@@ -344,26 +344,26 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
       // Logo cliquable — ouvre le jeu dans la modale interne
       // Pas de window.open, compatible mode kiosk Chrome
       case 'game':
-        return (
-          <div
-            onClick={() => onOpenGame(element.data)}
-            className="w-full h-full rounded-3xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300"
+      return (
+        <div
+          onClick={() => onOpenGame(element.data)}
+          className="w-full h-full rounded-3xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300"
+        >
+          <div className="text-8xl mb-6">🎮</div>
+          <h3
+            className="font-black text-2xl text-white text-center px-6"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
           >
-            <div className="text-8xl mb-6">🎮</div>
-            <h3
-              className="font-black text-2xl text-white text-center px-6"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
-            >
-              {element.data.title}
-            </h3>
-            <p
-              className="text-white font-bold mt-3"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
-            >
-              Appuyer pour jouer →
-            </p>
-          </div>
-        );
+            {element.data.title}
+          </h3>
+          <p
+            className="text-white font-bold mt-3"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+          >
+            Appuyer pour jouer →
+          </p>
+        </div>
+      );
 
       case 'color':
         return (
