@@ -15,6 +15,8 @@ function VisitorDisplay() {
   const [enrichedElements, setEnrichedElements] = useState([]);
   const [modalConfigs, setModalConfigs] = useState({});
   const [lastActivity, setLastActivity] = useState(Date.now());
+  // AJOUT : state pour le jeu actuellement ouvert en modale
+  const [activeGame, setActiveGame] = useState(null);
 
   useEffect(() => {
     loadTabletConfiguration();
@@ -38,16 +40,18 @@ function VisitorDisplay() {
     };
   }, []);
 
+  // Timer inactivité — refresh après 1m30
+  // MODIFIÉ : on ne refresh pas si un jeu est ouvert
   useEffect(() => {
     const inactivityTimer = setInterval(() => {
       const timeSinceLastActivity = Date.now() - lastActivity;
-      if (timeSinceLastActivity >= 90000) {
+      if (timeSinceLastActivity >= 90000 && !activeGame) {
         window.location.reload();
       }
     }, 1000);
 
     return () => clearInterval(inactivityTimer);
-  }, [lastActivity]);
+  }, [lastActivity, activeGame]);
 
   const loadTabletConfiguration = async () => {
     try {
@@ -112,7 +116,7 @@ function VisitorDisplay() {
               }
             }
           }
-          // AJOUT : les éléments 'game' sont passés tels quels, pas besoin d'enrichissement
+          // Les éléments 'game' et 'media' sont passés tels quels
           return element;
         })
       );
@@ -207,11 +211,13 @@ function VisitorDisplay() {
       )}
 
       <header className="absolute top-0 left-0 right-0 z-20 px-8 py-6">
-        <h2 className="text-4xl md:text-5xl font-black text-white text-center leading-tight mb-2"
+        <h2
+          className="text-4xl md:text-5xl font-black text-white text-center leading-tight mb-2"
           style={{
             textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.7)',
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
-          }}>
+          }}
+        >
           {themeData.name}
         </h2>
       </header>
@@ -229,6 +235,8 @@ function VisitorDisplay() {
                 getMediaType={getMediaType}
                 getMimeType={getMimeType}
                 zIndex={10 + index}
+                // AJOUT : callback pour ouvrir la modale jeu
+                onOpenGame={setActiveGame}
               />
             ))}
           </div>
@@ -242,6 +250,7 @@ function VisitorDisplay() {
         )}
       </div>
 
+      {/* Bouton admin */}
       <button
         onClick={() => navigate('/login')}
         className="fixed bottom-6 right-6 w-16 h-16 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-300 border-4 border-white flex items-center justify-center z-50"
@@ -252,12 +261,37 @@ function VisitorDisplay() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </button>
+
+      {/* AJOUT : Modale plein écran pour les jeux
+          Fonctionne en mode kiosk Chrome car tout reste dans la même fenêtre
+          Le timer d'inactivité est suspendu tant que la modale est ouverte */}
+      {activeGame && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
+            <h3 className="font-black text-xl text-white">{activeGame.title}</h3>
+            <button
+              onClick={() => setActiveGame(null)}
+              className="bg-red-500 hover:bg-red-600 text-white font-black px-6 py-2 rounded-xl transition-all active:scale-95"
+            >
+              ✕ Fermer
+            </button>
+          </div>
+          <div className="flex-1">
+            <iframe
+              src={activeGame.url}
+              className="w-full h-full border-0"
+              title={activeGame.title}
+              allow="fullscreen"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// MODIFIÉ : ajout du case 'game' dans le rendu
-function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMediaType, getMimeType, zIndex }) {
+function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMediaType, getMimeType, zIndex, onOpenGame }) {
   const renderContent = () => {
     switch (element.type) {
       case 'card':
@@ -316,22 +350,25 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
           </div>
         );
 
-      // AJOUT : rendu d'un jeu via iframe
-      // sandbox="allow-scripts allow-same-origin" : permissions minimales pour que le jeu fonctionne
-      // Si le jeu est bloqué par X-Frame-Options, demander à l'auteur d'autoriser l'iframe côté serveur
+      // AJOUT : logo cliquable — ouvre le jeu dans la modale interne
+      // Pas d'iframe directe ici, compatible mode kiosk Chrome
       case 'game':
         return (
           <div
-            onClick={() => window.open(element.data.url, '_blank')}
+            onClick={() => onOpenGame(element.data)}
             className="w-full h-full rounded-3xl overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300"
           >
             <div className="text-8xl mb-6">🎮</div>
-            <h3 className="font-black text-2xl text-white text-center px-6"
-                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+            <h3
+              className="font-black text-2xl text-white text-center px-6"
+              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+            >
               {element.data.title}
             </h3>
-            <p className="text-white font-bold mt-3"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+            <p
+              className="text-white font-bold mt-3"
+              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+            >
               Appuyer pour jouer →
             </p>
           </div>
