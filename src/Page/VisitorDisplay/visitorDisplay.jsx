@@ -410,6 +410,7 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
       {renderContent()}
     </div>
   );
+  
 }
 
 export default VisitorDisplay;
