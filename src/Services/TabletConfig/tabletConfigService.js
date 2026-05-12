@@ -6,10 +6,12 @@ const STORAGE_KEY = 'museumLayout';
 export const saveCompleteLayout = (themeId, themeData, layoutElements, modalConfigs) => {
   try {
     const config = {
-      themeId, // ID du thème
-      themeData, 
+      themeId,
+      themeData,
       elements: layoutElements,
       modalConfigs: modalConfigs || {},
+      // AJOUT : games initialisé à [] si pas encore présent
+      games: [],
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
@@ -28,7 +30,7 @@ export const getCompleteLayout = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return null;
-    
+
     const parsed = JSON.parse(saved);
     console.log('Configuration lue du localStorage:', parsed);
     return parsed;
@@ -60,16 +62,16 @@ export const updateModalConfig = (cardId, modalElements) => {
   try {
     const current = getCompleteLayout();
     if (!current) return false;
-    
+
     current.modalConfigs = current.modalConfigs || {};
     current.modalConfigs[cardId] = modalElements;
     current.savedAt = new Date().toISOString();
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
     console.log(`Modal config mise à jour pour carte ${cardId}`);
     return true;
   } catch (error) {
-    console.error('Erreur mise à jour modal:', error);
+    console.error('Erreur mise à jour modal config:', error);
     return false;
   }
 };
@@ -85,6 +87,28 @@ export const getModalConfig = (cardId) => {
   } catch (error) {
     console.error('Erreur lecture modal config:', error);
     return null;
+  }
+};
+
+/**
+ * AJOUT : Mettre à jour la liste des jeux
+ * Appelé depuis LayoutConfigurator avant saveLayout
+ * Ne touche pas aux autres champs de la config
+ */
+export const updateGames = (games) => {
+  try {
+    const current = getCompleteLayout();
+    if (!current) return false;
+
+    current.games = games;
+    current.savedAt = new Date().toISOString();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    console.log('Jeux mis à jour:', games);
+    return true;
+  } catch (error) {
+    console.error('Erreur mise à jour jeux:', error);
+    return false;
   }
 };
 

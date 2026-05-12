@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getThemeById } from '../../Services/Api/apiService.js';
-import { saveCompleteLayout, getCompleteLayout } from '../../Services/TabletConfig/tabletConfigService.js';
+// MODIFIÉ : ajout de updateGames dans les imports
+import { saveCompleteLayout, getCompleteLayout, updateGames } from '../../Services/TabletConfig/tabletConfigService.js';
 import { UPLOAD_URL } from '../../config.js';
 import MuseumCard from '../../Component/Cards/cards.jsx';
 import DraggableElement from '../../Component/DragAndDrop/dragAndDrop.jsx';
@@ -17,6 +18,11 @@ function LayoutConfigurator() {
   const [error, setError] = useState(null);
   const [editingCardModal, setEditingCardModal] = useState(null);
   const [modalLayout, setModalLayout] = useState([]);
+
+  // AJOUT : states pour les jeux
+  const [games, setGames] = useState([]);
+  const [newGameTitle, setNewGameTitle] = useState('');
+  const [newGameUrl, setNewGameUrl] = useState('');
 
   useEffect(() => {
     loadThemeAndLayout();
@@ -34,8 +40,15 @@ function LayoutConfigurator() {
       if (savedLayout && savedLayout.themeId == themeId) {
         const elements = Array.isArray(savedLayout.elements) ? savedLayout.elements : [];
         setLayout(elements);
+
+        // AJOUT : récupération des jeux sauvegardés
+        // Si games n'existe pas dans l'ancienne config, on part sur []
+        const savedGames = savedLayout?.games || [];
+        setGames(savedGames);
       } else {
         setLayout([]);
+        // AJOUT : pas de config existante, on repart à zéro
+        setGames([]);
       }
     } catch (err) {
       setError('Impossible de charger le thème');
@@ -53,9 +66,13 @@ function LayoutConfigurator() {
 
       const completeConfig = getCompleteLayout();
       const modalConfigs = completeConfig?.modalConfigs || {};
-      
+
+      // AJOUT : on sauvegarde les jeux avant de sauvegarder le layout complet
+      // updateGames enrichit la config existante sans écraser les autres champs
+      updateGames(games);
+
       const success = saveCompleteLayout(themeId, themeData, layout, modalConfigs);
-      
+
       if (success) {
         alert('Configuration sauvegardée pour cette tablette !');
       } else {
@@ -69,33 +86,36 @@ function LayoutConfigurator() {
   const addElementToLayout = (type, data) => {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-    
+
     let width, height;
-    
+
     if (type === 'card') {
       width = windowWidth * 0.30;
       height = windowHeight * 0.90;
     } else if (type === 'media') {
       width = windowWidth * 0.28;
       height = windowHeight * 0.45;
+    // AJOUT : taille dédiée pour les jeux
+    } else if (type === 'game') {
+      width = windowWidth * 0.35;
+      height = windowHeight * 0.70;
     } else {
       width = 250;
       height = 200;
     }
 
-    // Calculer la position X automatique pour l'alignement horizontal
     const baseX = 80;
     const baseY = 80;
-    const spacingX = width + 24; // gap-6 = 24px
+    const spacingX = width + 24;
     const totalX = layout.length * spacingX;
-    
+
     const newElement = {
       id: `${type}-${data.id}-${Date.now()}`,
       type: type,
       data: data,
-      position: { 
+      position: {
         x: baseX + totalX,
-        y: baseY 
+        y: baseY
       },
       size: { width, height }
     };
@@ -113,7 +133,7 @@ function LayoutConfigurator() {
   const openModalConfig = (cardData) => {
     const completeConfig = getCompleteLayout();
     const savedModalLayout = completeConfig?.modalConfigs?.[cardData.id] || [];
-    
+
     setEditingCardModal(cardData);
     setModalLayout(savedModalLayout);
   };
@@ -132,7 +152,6 @@ function LayoutConfigurator() {
 
     const bgPath = themeData.backgroundImage.publicPath;
     if (bgPath) {
-      
       const fullUrl = `${UPLOAD_URL}`;
       return fullUrl;
     }
@@ -268,17 +287,85 @@ function LayoutConfigurator() {
               </section>
             )}
 
-            {(!themeData.cards?.length && !themeData.medias?.length) && (
+            {/* AJOUT : Section Jeux */}
+            <section className="mb-12">
+              <h3 className="text-lg font-black text-green-500 mb-6 flex items-center gap-3 pb-4 border-b-2 border-green-200/50">
+                🎮 Jeux ({games.length})
+              </h3>
+
+              {/* Formulaire ajout jeu */}
+              {/* Les URLs des jeux sont saisies manuellement contrairement aux URLs API qui sont hardcodées pour la sécurité */}
+              <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-2xl space-y-3">
+                <input
+                  type="text"
+                  placeholder="Nom du jeu"
+                  value={newGameTitle}
+                  onChange={e => setNewGameTitle(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border-2 border-green-200 text-sm font-semibold focus:outline-none focus:border-green-400 bg-white text-zinc-950 placeholder:text-zinc-400"
+                />
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={newGameUrl}
+                  onChange={e => setNewGameUrl(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border-2 border-green-200 text-sm font-mono focus:outline-none focus:border-green-400 bg-white text-zinc-950 placeholder:text-zinc-400"
+                />
+                <button
+                  onClick={() => {
+                    // Validation : les deux champs sont requis
+                    if (!newGameTitle.trim() || !newGameUrl.trim()) return;
+                    const newGame = {
+                      id: `game-${Date.now()}`,
+                      title: newGameTitle.trim(),
+                      url: newGameUrl.trim()
+                    };
+                    setGames([...games, newGame]);
+                    // Reset du formulaire
+                    setNewGameTitle('');
+                    setNewGameUrl('');
+                  }}
+                  className="w-full !bg-green-500 hover:!bg-green-600 !text-white font-black py-2 rounded-xl transition-all"
+                >
+                  + Ajouter
+                </button>
+              </div>
+
+              {/* Liste des jeux sauvegardés */}
+              <div className="space-y-4">
+                {games.map(game => (
+                  <div key={game.id} className="group flex items-center gap-2">
+                    {/* Clic = ajout au canvas comme les cartes et médias */}
+                    <div
+                      onClick={() => addElementToLayout('game', game)}
+                      className="flex-1 p-4 bg-gradient-to-r from-green-50 to-green-100/50 border-2 border-green-200/60 hover:border-green-400/80 rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md"
+                    >
+                      <h4 className="font-black text-base text-green-900 mb-1">{game.title}</h4>
+                      <p className="text-xs text-zinc-500 font-mono truncate">{game.url}</p>
+                    </div>
+                    {/* Suppression du jeu de la liste (pas du canvas) */}
+                    <button
+                      onClick={() => setGames(games.filter(g => g.id !== game.id))}
+                      className="!bg-red-500 hover:!bg-red-600 !text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 transition-all"
+                      title="Supprimer le jeu"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {(!themeData.cards?.length && !themeData.medias?.length && !games.length) && (
               <div className="text-center py-20 border-2 border-dashed border-zinc-200 rounded-3xl opacity-50">
                 <h3 className="text-2xl font-black text-zinc-950 mb-4">Aucun élément</h3>
-                <p className="text-lg text-zinc-950/75">Ajoutez des cartes ou médias à ce thème</p>
+                <p className="text-lg text-zinc-950/75">Ajoutez des cartes, médias ou jeux</p>
               </div>
             )}
           </div>
         </aside>
 
-        {/* Canvas principal - MODE CONFIGURATION uniquement */}
-        <div 
+        {/* Canvas principal */}
+        <div
           className="flex-1 relative overflow-hidden"
           style={{
             backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
@@ -304,7 +391,7 @@ function LayoutConfigurator() {
                   </div>
                 </div>
               ) : (
-                layout.map((element, index) => (
+                layout.map((element) => (
                   <ConfigElement
                     key={element.id}
                     element={element}
@@ -323,16 +410,16 @@ function LayoutConfigurator() {
       {/* Modal configuration carte */}
       {editingCardModal && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-center z-50 p-8">
-              <div
-                className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white/20"
-                style={{
-                  width: '28in',
-                  height: '28in',
-                  maxWidth: '95vw',
-                  maxHeight: '95vh',
-                }}
-              >            
-              <ModalConfigurable
+          <div
+            className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white/20"
+            style={{
+              width: '28in',
+              height: '28in',
+              maxWidth: '95vw',
+              maxHeight: '95vh',
+            }}
+          >
+            <ModalConfigurable
               cardData={editingCardModal}
               themeData={themeData}
               layout={modalLayout}
@@ -348,6 +435,7 @@ function LayoutConfigurator() {
 }
 
 // Composant pour les éléments en mode CONFIG
+// MODIFIÉ : ajout du rendu pour le type 'game'
 function ConfigElement({ element, themeData, onPositionChange, onRemove, onConfigureModal }) {
   if (element.type === 'card') {
     return (
@@ -361,6 +449,7 @@ function ConfigElement({ element, themeData, onPositionChange, onRemove, onConfi
     );
   }
 
+  // Les types 'media' et 'game' passent par DraggableElement
   return (
     <DraggableElement
       element={element}
@@ -379,7 +468,7 @@ function CardWrapper({ element, themeData, onPositionChange, onRemove, onConfigu
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setIsDragging(true);
     setDragOffset({
       x: e.clientX - element.position.x,
@@ -390,13 +479,13 @@ function CardWrapper({ element, themeData, onPositionChange, onRemove, onConfigu
   const handleMouseMove = (e) => {
     if (!isDragging) return;
     e.preventDefault();
-    
+
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
-    
+
     onPositionChange(
-      element.id, 
-      Math.max(0, newX), 
+      element.id,
+      Math.max(0, newX),
       Math.max(0, newY)
     );
   };
@@ -431,8 +520,8 @@ function CardWrapper({ element, themeData, onPositionChange, onRemove, onConfigu
       }}
       onMouseDown={handleMouseDown}
       className={`transition-all duration-200 ${
-        isDragging 
-          ? 'shadow-3xl !scale-105 opacity-90 ring-4 ring-blue-500/50' 
+        isDragging
+          ? 'shadow-3xl !scale-105 opacity-90 ring-4 ring-blue-500/50'
           : 'hover:shadow-3xl hover:scale-[1.02] ring-2 ring-transparent hover:ring-blue-400/50 shadow-2xl'
       }`}
     >
@@ -446,7 +535,7 @@ function CardWrapper({ element, themeData, onPositionChange, onRemove, onConfigu
       >
         <Trash2 size={20} />
       </button>
-      
+
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -457,9 +546,9 @@ function CardWrapper({ element, themeData, onPositionChange, onRemove, onConfigu
       >
         <Edit size={20} />
       </button>
-      
+
       <div className="h-full w-full rounded-3xl overflow-hidden border-4 border-white/50 shadow-2xl">
-        <MuseumCard 
+        <MuseumCard
           cardData={element.data}
           themeData={themeData}
           isConfigMode={true}

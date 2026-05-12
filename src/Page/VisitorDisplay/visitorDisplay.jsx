@@ -20,13 +20,9 @@ function VisitorDisplay() {
     loadTabletConfiguration();
   }, []);
 
-  // Détection d'activité utilisateur
   useEffect(() => {
-    const handleActivity = () => {
-      setLastActivity(Date.now());
-    };
+    const handleActivity = () => setLastActivity(Date.now());
 
-    // Écouter toutes les interactions
     window.addEventListener('click', handleActivity);
     window.addEventListener('touchstart', handleActivity);
     window.addEventListener('mousemove', handleActivity);
@@ -42,14 +38,13 @@ function VisitorDisplay() {
     };
   }, []);
 
-  // Timer d'inactivité - refresh après 1m30
   useEffect(() => {
     const inactivityTimer = setInterval(() => {
       const timeSinceLastActivity = Date.now() - lastActivity;
-      if (timeSinceLastActivity >= 90000) { // 90 secondes = 1m30
+      if (timeSinceLastActivity >= 90000) {
         window.location.reload();
       }
-    }, 1000); // Vérifier toutes les secondes
+    }, 1000);
 
     return () => clearInterval(inactivityTimer);
   }, [lastActivity]);
@@ -57,9 +52,9 @@ function VisitorDisplay() {
   const loadTabletConfiguration = async () => {
     try {
       setIsLoading(true);
-      
+
       const tabletConfig = getTabletLayout();
-      
+
       if (!tabletConfig || !tabletConfig.themeId) {
         setError('Cette tablette n\'est pas encore configurée');
         return;
@@ -80,18 +75,18 @@ function VisitorDisplay() {
       }
 
       await enrichCardElements(elements);
-      
+
     } catch (err) {
       const tabletConfig = getTabletLayout();
       if (tabletConfig && tabletConfig.themeData) {
         setThemeData(tabletConfig.themeData);
         const elements = Array.isArray(tabletConfig.elements) ? tabletConfig.elements : [];
         setLayout(elements);
-        
+
         if (tabletConfig.modalConfigs) {
           setModalConfigs(tabletConfig.modalConfigs);
         }
-        
+
         await enrichCardElements(elements);
       } else {
         setError('Impossible de charger la configuration');
@@ -107,32 +102,28 @@ function VisitorDisplay() {
         elements.map(async (element) => {
           if (element.type === 'card') {
             const cardId = typeof element.data === 'number' ? element.data : element.data?.id;
-            
+
             if (cardId) {
               try {
                 const fullCardData = await getCardById(cardId);
-                return {
-                  ...element,
-                  data: fullCardData
-                };
+                return { ...element, data: fullCardData };
               } catch (error) {
                 return element;
               }
             }
           }
+          // AJOUT : les éléments 'game' sont passés tels quels, pas besoin d'enrichissement
           return element;
         })
       );
-      
+
       setEnrichedElements(enriched);
     } catch (error) {
       setEnrichedElements(elements);
     }
   };
 
-  const getMediaUrl = (media) => {
-  return `${UPLOAD_URL}${media.publicPath}`;
-};
+  const getMediaUrl = (media) => `${UPLOAD_URL}${media.publicPath}`;
 
   const getMediaType = (media) => {
     const ext = media.extensionFile.toLowerCase();
@@ -152,11 +143,11 @@ function VisitorDisplay() {
   };
 
   const getBackgroundImage = () => {
-  if (!themeData?.backgroundImage) return null;
-  const bgPath = themeData.backgroundImage.publicPath;
-  if (bgPath) return `${UPLOAD_URL}${bgPath}`;
-  return null;
-};
+    if (!themeData?.backgroundImage) return null;
+    const bgPath = themeData.backgroundImage.publicPath;
+    if (bgPath) return `${UPLOAD_URL}${bgPath}`;
+    return null;
+  };
 
   const backgroundImage = getBackgroundImage();
 
@@ -202,7 +193,7 @@ function VisitorDisplay() {
   const elementsToDisplay = enrichedElements.length > 0 ? enrichedElements : layout;
 
   return (
-    <div 
+    <div
       className="w-full h-screen overflow-hidden relative"
       style={{
         backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
@@ -211,22 +202,20 @@ function VisitorDisplay() {
         backgroundColor: backgroundImage ? 'transparent' : 'white'
       }}
     >
-      {/* Overlay pour améliorer la lisibilité si image de fond */}
       {backgroundImage && (
         <div className="absolute inset-0 bg-black/30"></div>
       )}
 
       <header className="absolute top-0 left-0 right-0 z-20 px-8 py-6">
         <h2 className="text-4xl md:text-5xl font-black text-white text-center leading-tight mb-2"
-            style={{ 
-              textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.7)',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
-            }}>
+          style={{
+            textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.7)',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+          }}>
           {themeData.name}
         </h2>
       </header>
 
-      {/* Container avec scroll horizontal */}
       <div className="w-full h-full pt-30 lg:pt-35 pb-12 relative z-10 overflow-x-auto overflow-y-hidden">
         {Array.isArray(elementsToDisplay) && elementsToDisplay.length > 0 ? (
           <div className="inline-flex h-full gap-6 px-8 items-center">
@@ -255,7 +244,7 @@ function VisitorDisplay() {
 
       <button
         onClick={() => navigate('/login')}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-300 border-4 border-white flex items-center justify-center z-50 group"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-2xl shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-300 border-4 border-white flex items-center justify-center z-50"
         title="Mode administrateur"
       >
         <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,42 +256,41 @@ function VisitorDisplay() {
   );
 }
 
+// MODIFIÉ : ajout du case 'game' dans le rendu
 function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMediaType, getMimeType, zIndex }) {
   const renderContent = () => {
     switch (element.type) {
       case 'card':
         const cardId = element.data?.id;
         const modalLayout = cardId && modalConfigs[cardId] ? modalConfigs[cardId] : [];
-        
+
         return (
-          
-            <MuseumCard 
-              cardData={element.data}
-              themeData={themeData}
-              isConfigMode={false}
-              modalLayout={modalLayout}
-            />
-          
+          <MuseumCard
+            cardData={element.data}
+            themeData={themeData}
+            isConfigMode={false}
+            modalLayout={modalLayout}
+          />
         );
-      
+
       case 'media':
         const mediaType = getMediaType(element.data);
         const mediaUrl = getMediaUrl(element.data);
         const mimeType = getMimeType(element.data);
-        
+
         return (
           <div className="w-full h-full p-6 bg-white rounded-3xl shadow-2xl border-4 border-blue-100 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-hidden rounded-2xl bg-zinc-50">
               {mediaType === 'image' && (
-                <img 
-                  src={mediaUrl} 
+                <img
+                  src={mediaUrl}
                   alt={element.data.userGivenName}
                   className="w-full h-full object-cover rounded-2xl"
                 />
               )}
               {(mediaType === 'video' || mediaType === 'audio') && (
                 <div className="w-full h-full flex items-center justify-center">
-                  <MediaPlayer 
+                  <MediaPlayer
                     mediaSource={mediaUrl}
                     mediaType={mimeType}
                     width="100%"
@@ -327,11 +315,26 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
             </div>
           </div>
         );
-      
+
+      // AJOUT : rendu d'un jeu via iframe
+      // sandbox="allow-scripts allow-same-origin" : permissions minimales pour que le jeu fonctionne
+      // Si le jeu est bloqué par X-Frame-Options, demander à l'auteur d'autoriser l'iframe côté serveur
+      case 'game':
+  return (
+    <div
+      onClick={() => window.open(element.data.url, '_blank')}
+      className="w-full h-full bg-white rounded-3xl shadow-2xl border-4 border-green-100 overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-3xl transition-all duration-300 hover:border-green-400"
+    >
+      <div className="text-8xl mb-6">🎮</div>
+      <h3 className="font-black text-2xl text-zinc-950 text-center px-6">{element.data.title}</h3>
+      <p className="text-green-500 font-bold mt-3">Appuyer pour jouer →</p>
+    </div>
+  );
+
       case 'color':
         return (
           <div className="w-full h-full p-8 bg-white rounded-3xl shadow-2xl border-4 border-blue-100 flex flex-col items-center justify-center">
-            <div 
+            <div
               className="w-4/5 h-4/5 rounded-3xl shadow-2xl mx-auto mb-6 border-4 border-white"
               style={{ backgroundColor: element.data.colorCode }}
             />
@@ -339,7 +342,7 @@ function VisitorElement({ element, themeData, modalConfigs, getMediaUrl, getMedi
             <p className="text-lg font-mono text-blue-500 font-bold text-center">{element.data.colorCode}</p>
           </div>
         );
-      
+
       default:
         return (
           <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl shadow-2xl border-4 border-blue-200 flex items-center justify-center">
