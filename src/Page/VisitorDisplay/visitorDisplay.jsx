@@ -268,14 +268,14 @@ function VisitorDisplay() {
         ✕ Fermer
       </button>
     </div>
-    <div className="flex-1">
-      jsx<iframe
-  src={activeGame.url}
-  className="w-full h-full border-0"
-  title={activeGame.title}
-  allow="fullscreen"
-/>
-    </div>
+   <div className="flex-1">
+    <iframe
+      src={activeGame.url}
+      className="w-full h-full border-0"
+      title={activeGame.title}
+      allow="fullscreen"
+    />
+  </div>
   </div>
 )}
     </div>
