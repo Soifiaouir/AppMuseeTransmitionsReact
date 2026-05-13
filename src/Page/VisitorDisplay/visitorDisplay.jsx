@@ -146,6 +146,8 @@ function VisitorDisplay() {
 
   const backgroundImage = getBackgroundImage();
 
+  
+
   if (isLoading) {
     return (
       <div className="w-full h-screen bg-white flex items-center justify-center p-12">
@@ -226,7 +228,11 @@ function VisitorDisplay() {
                 getMediaType={getMediaType}
                 getMimeType={getMimeType}
                 zIndex={10 + index}
-                onOpenGame={setActiveGame}
+                // Dans VisitorDisplay, modifiez setActiveGame :
+                onOpenGame={(gameData) => {
+                  console.log('Setting activeGame:', gameData);
+                  setActiveGame(gameData);
+                }}
               />
             ))}
           </div>
@@ -268,14 +274,15 @@ function VisitorDisplay() {
         ✕ Fermer
       </button>
     </div>
-   <div className="flex-1">
-    <iframe
-      src={activeGame.url}
-      className="w-full h-full border-0"
-      title={activeGame.title}
-      allow="fullscreen"
-    />
-  </div>
+    <div className="flex-1 relative">
+      <iframe
+        src={activeGame.url}
+        className="absolute inset-0 w-full h-full border-0"
+        title={activeGame.title}
+        allow="fullscreen"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups-to-escape-sandbox"
+      />
+    </div>
   </div>
 )}
     </div>
