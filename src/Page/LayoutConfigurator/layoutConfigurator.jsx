@@ -58,30 +58,27 @@ function LayoutConfigurator() {
   };
 
   const saveLayout = () => {
-    try {
-      if (!themeData) {
-        alert('Erreur: Aucun thème chargé');
-        return;
-      }
+  try {
+    if (!themeData) { alert('Erreur: Aucun thème chargé'); return; }
 
-      const completeConfig = getCompleteLayout();
-      const modalConfigs = completeConfig?.modalConfigs || {};
+    const completeConfig = getCompleteLayout();
+    const modalConfigs = completeConfig?.modalConfigs || {};
 
-      // AJOUT : on sauvegarde les jeux avant de sauvegarder le layout complet
-      // updateGames enrichit la config existante sans écraser les autres champs
-      updateGames(games);
+    // saveCompleteLayout d'abord (préserve games: [] ou existing)
+    const success = saveCompleteLayout(themeId, themeData, layout, modalConfigs);
 
-      const success = saveCompleteLayout(themeId, themeData, layout, modalConfigs);
+    // updateGames après, pour écrire les jeux courants par-dessus
+    updateGames(games);
 
-      if (success) {
-        alert('Configuration sauvegardée pour cette tablette !');
-      } else {
-        alert('Erreur sauvegarde');
-      }
-    } catch (err) {
+    if (success) {
+      alert('Configuration sauvegardée pour cette tablette !');
+    } else {
       alert('Erreur sauvegarde');
     }
-  };
+  } catch (err) {
+    alert('Erreur sauvegarde');
+  }
+};
 
   const addElementToLayout = (type, data) => {
     const windowWidth = window.innerWidth;

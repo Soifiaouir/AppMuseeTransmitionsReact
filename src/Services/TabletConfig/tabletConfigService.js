@@ -5,17 +5,16 @@ const STORAGE_KEY = 'museumLayout';
  */
 export const saveCompleteLayout = (themeId, themeData, layoutElements, modalConfigs) => {
   try {
+    const existing = getCompleteLayout();  // ← récupérer l'existant
     const config = {
       themeId,
       themeData,
       elements: layoutElements,
       modalConfigs: modalConfigs || {},
-      // AJOUT : games initialisé à [] si pas encore présent
-      games: [],
+      games: existing?.games || [],  // ← préserver les jeux
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    console.log('Configuration complète sauvegardée avec thème');
     return true;
   } catch (error) {
     console.error('Erreur sauvegarde:', error);
