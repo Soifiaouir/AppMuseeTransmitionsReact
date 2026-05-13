@@ -263,28 +263,25 @@ function VisitorDisplay() {
       {/* Modale plein écran jeu
           Reste dans la même fenêtre — compatible mode kiosk Chrome
           Le timer d'inactivité est suspendu tant que activeGame est non null */}
+      // Remplacer l'iframe par une navigation interne
       {activeGame && (
-  <div className="fixed inset-0 z-50 bg-black flex flex-col">
-    <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
-      <h3 className="font-black text-xl text-white">{activeGame.title}</h3>
-      <button
-        onClick={() => setActiveGame(null)}
-        className="bg-red-500 hover:bg-red-600 text-white font-black px-6 py-2 rounded-xl transition-all active:scale-95"
-      >
-        ✕ Fermer
-      </button>
-    </div>
-    <div className="flex-1 relative">
-      <iframe
-        src={activeGame.url}
-        className="absolute inset-0 w-full h-full border-0"
-        title={activeGame.title}
-        allow="fullscreen"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups-to-escape-sandbox"
-      />
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-zinc-950">
+            <h3 className="font-black text-xl text-white">{activeGame.title}</h3>
+            <button
+              onClick={() => setActiveGame(null)}
+              className="bg-red-500 text-white font-black px-6 py-2 rounded-xl"
+            >
+              ✕ Fermer
+            </button>
+          </div>
+          {/* Utiliser un webview-like avec history au lieu d'iframe */}
+          <div className="flex-1 flex items-center justify-center bg-zinc-900 text-white text-xl">
+            Ce jeu ne peut pas être affiché en iframe.
+            <br/>URL : {activeGame.url}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
